@@ -111,14 +111,14 @@ $results = $_SESSION['results'] ?? [];
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Extracted Weekly Totals</title>
+  <title>Extracted Weekly Payroll Totals</title>
   <link
     rel="stylesheet"
     href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"
   >
 </head>
 <body class="p-5">
-  <h2>Extracted Weekly Totals</h2>
+  <h2>Extracted Weekly Payroll Totals</h2>
 
   <?php if (empty($results)): ?>
     <div class="alert alert-warning">No records found.</div>
