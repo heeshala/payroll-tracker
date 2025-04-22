@@ -43,13 +43,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !empty($_FILES['pdf']['tmp_name']))
         // look for type in nearby context
         $offset  = mb_strpos($text, $m[0]);
         $context = mb_substr($text, max(0, $offset - 500), 1000);
-        if (preg_match('/\b(Part\s*Time|Full\s*Time)\b/iu', $context, $t)) {
+        if (preg_match('/\b(Casual|Part\s*Time|Full\s*Time)\b/iu', $context, $t)) {
             $type = ucwords(strtolower($t[1]));
         } else {
             $type = 'Unknown';
         }
 
-        $results[] = compact('name','type','hours','cost');
+        if($type!='Casual'){
+          $results[] = compact('name','type','hours','cost');
+        }
+
+        
     }
 
     // persist for export & rendering
@@ -146,6 +150,4 @@ $results = $_SESSION['results'] ?? [];
     <a href="?export=1" class="btn btn-success mt-3">Export to Excel</a>
   <?php endif; ?>
 
-  <a href="index.html" class="btn btn-secondary mt-3">Upload Another PDF</a>
-</body>
-</html>
+  <a href="index.html" class="btn btn-seco
