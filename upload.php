@@ -43,7 +43,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !empty($_FILES['pdf']['tmp_name']))
         // look for type in nearby context
         $offset  = mb_strpos($text, $m[0]);
         $context = mb_substr($text, max(0, $offset - 500), 1000);
-        if (preg_match('/\b(Casual|Part\s*Time|Full\s*Time)\b/iu', $context, $t)) {
+        if (preg_match('/\b(Part\s*Time|Full\s*Time)\b/iu', $context, $t)) {
             $type = ucwords(strtolower($t[1]));
         } else {
             $type = 'Unknown';
