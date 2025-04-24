@@ -19,7 +19,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !empty($_FILES['pdf']['tmp_name']))
     $text
 );
 
-    
+    // catch lines like “Heeshala Weerasuriya Weekly Totals 21.32 $569.44 21.15”
     $pattern = '/
         (?P<name>[\p{L}\'’\-\x{00AD}]+(?:[ \x{00A0}\r\n]+[\p{L}\'’\-\x{00AD}]+)+)  # name (multi-part)
         \s+Weekly\s+Totals\s+
@@ -79,18 +79,16 @@ if (isset($_GET['export'])) {
 
     $ss = new Spreadsheet();
     $sh = $ss->getActiveSheet();
-    $sh->fromArray(['Name','Type','Total Hours','Actual Hours'], null, 'A1');
+    $sh->fromArray(['Name','Actual Hours'], null, 'A1');
 
     $r = 2;
     foreach ($data as $row) {
         $sh->setCellValue("A{$r}", $row['name'])
-           ->setCellValue("B{$r}", $row['type'])
-           ->setCellValue("C{$r}", $row['hours'])
-           ->setCellValue("D{$r}", $row['actual']);
+           ->setCellValue("B{$r}", $row['actual']);
         $r++;
     }
 
-    foreach (range('A','D') as $col) {
+    foreach (range('A','B') as $col) {
         $sh->getColumnDimension($col)->setAutoSize(true);
     }
 
