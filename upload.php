@@ -11,51 +11,64 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !empty($_FILES['pdf']['tmp_name']))
     $parser = new Parser();
     $text   = $parser->parseFile($_FILES['pdf']['tmp_name'])->getText();
 
-    // glue names split across lines
-    $text = preg_replace('/\R+(?=\s*Weekly\s+Totals)/u', ' ', $text);
+    // 1a) Clean out “Hours paid drink Break” noise
     $text = preg_replace(
-    '/(?:Hours[ \x{00A0}\r\n]+paid[ \x{00A0}\r\n]+drink[ \x{00A0}\r\n]+Break)[\s]*/iu',
-    '',
-    $text
-);
+        '/(?:Hours[ \x{00A0}\r\n]+paid[ \x{00A0}\r\n]+drink[ \x{00A0}\r\n]+Break)[\s]*/iu',
+        '',
+        $text
+    );
 
-    // catch lines like “Heeshala Weerasuriya Weekly Totals 21.32 $569.44 21.15”
-    $pattern = '/
-        (?P<name>[\p{L}\'’\-\x{00AD}]+(?:[ \x{00A0}\r\n]+[\p{L}\'’\-\x{00AD}]+)+)  # name (multi-part)
+    // 1b) Glue names split across lines before "Weekly Totals"
+    $text = preg_replace('/\R+(?=\s*Weekly\s+Totals)/u', ' ', $text);
+
+    // 2) Find every “Name Weekly Totals H.M $C.C Actual” match
+    $wtPattern = '/
+        (?P<name>[\p{L}\'’\-\x{00AD}]+         # first name part
+          (?:[ \x{00A0}\r\n]+[\p{L}\'’\-\x{00AD}]+)+  # additional parts
+        )
         \s+Weekly\s+Totals\s+
         (?P<hours>\d+\.\d{2})\s+
         \$[\d,]+\.\d{2}\s+
         (?P<actual>\d+\.\d{2})
     /imux';
 
-    preg_match_all($pattern, $text, $matches, PREG_SET_ORDER);
+    preg_match_all($wtPattern, $text, $matches, PREG_SET_ORDER);
+
+    // 3) Prepare status+position pattern
+    $statusPosPattern = '/\b(Casual|Part\s*Time|Full\s*Time)\s+' .
+                        '(Crew|Maintenance|Supervisor|Shift\s*Manager|' .
+                        'Salaried\s*Manager|Restaurant\s*Manager)\b/iu';
 
     $results = [];
     foreach ($matches as $m) {
-        $name = ucwords(strtolower(preg_replace('/\s+/',' ',$m['name'])));
+        // 3a) Normalize name (collapse whitespace, keep first+last two)
+        $clean = preg_replace('/\s+/', ' ', trim($m['name']));
+        $parts = explode(' ', $clean);
+        if (count($parts) > 2) {
+            $parts = array_merge(
+                [ $parts[0] ],
+                array_slice($parts, -2)
+            );
+        }
+        $name = ucwords(strtolower(implode(' ', $parts)));
 
-
+        // 3b) Find the match offset in the text
         $offset = mb_strpos($text, $m[0]);
-        $context = mb_substr($text, max(0, $offset - 200), 200);
+        $type   = 'Unknown';
 
-        // 2) IMPROVED TYPE DETECTION
-        if (preg_match('/\b(Casual\s+Crew|Part\s*Time\s+Crew|Full\s*Time\s+Crew)\b/iu', $context, $t)) {
-            $type = ucwords(strtolower($t[1]));
-        }
-        // fallback for just “Casual” / “Part Time” / “Full Time”
-        elseif (preg_match('/\b(Casual|Part\s*Time|Full\s*Time)\b/iu', $context, $t2)) {
-            $raw = strtolower($t2[1]);
-            $type = $raw === 'casual'
-                  ? 'Casual Crew'
-                  : ($raw === 'part time'
-                      ? 'Part Time Crew'
-                      : 'Full Time Crew');
-        } else {
-            $type = 'Unknown';
+        // 3c) Try progressively larger look-back windows
+        foreach ([200, 500, 1000, strlen($text)] as $len) {
+            $start   = max(0, $offset - $len);
+            $context = mb_substr($text, $start, $len);
+            if (preg_match_all($statusPosPattern, $context, $all, PREG_SET_ORDER)) {
+                $last = end($all);
+                $type = ucwords(strtolower($last[1] . ' ' . $last[2]));
+                break;
+            }
         }
 
-        // 3) SKIP ANY CASUAL CREW
-        if (stripos($type, 'Casual') !== false) {
+        // 3d) Optionally skip pure Casual Crew
+        if (strtolower($type) === 'casual crew') {
             continue;
         }
 
@@ -77,25 +90,27 @@ if (isset($_GET['export'])) {
         exit('Nothing to export.');
     }
 
-    $ss = new Spreadsheet();
-    $sh = $ss->getActiveSheet();
-    $sh->fromArray(['Name','Actual Hours'], null, 'A1');
+    $spreadsheet = new Spreadsheet();
+    $sheet       = $spreadsheet->getActiveSheet();
+    $sheet->fromArray(['Name','Type','Actual Hours'], null, 'A1');
 
     $r = 2;
     foreach ($data as $row) {
-        $sh->setCellValue("A{$r}", $row['name'])
-           ->setCellValue("B{$r}", $row['actual']);
+        $sheet
+            ->setCellValue("A{$r}", $row['name'])
+            ->setCellValue("B{$r}", $row['type'])
+            ->setCellValue("C{$r}", $row['actual']);
         $r++;
     }
 
-    foreach (range('A','B') as $col) {
-        $sh->getColumnDimension($col)->setAutoSize(true);
+    foreach (range('A','C') as $col) {
+        $sheet->getColumnDimension($col)->setAutoSize(true);
     }
 
     header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
     header('Content-Disposition: attachment;filename="weekly_totals.xlsx"');
     header('Cache-Control: max-age=0');
-    (new Xlsx($ss))->save('php://output');
+    (new Xlsx($spreadsheet))->save('php://output');
     exit;
 }
 
@@ -115,6 +130,7 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
 </head>
 <body class="p-5">
   <h2>Extracted Weekly Payroll Totals</h2>
+
   <?php if (empty($results)): ?>
     <div class="alert alert-warning">No records found.</div>
   <?php else: ?>
@@ -122,23 +138,24 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
       <thead>
         <tr>
           <th>Name</th>
-          <!--<th>Type</th><th>Total Hours</th>-->
+          <th>Type</th>
           <th>Actual Hours</th>
         </tr>
       </thead>
       <tbody>
         <?php foreach ($results as $r): ?>
         <tr>
-          <td><?=htmlspecialchars($r['name'])?></td>
-          <!--<td><?=htmlspecialchars($r['type'])?></td>
-          <td><?=number_format($r['hours'],2)?></td>-->
-          <td><?=number_format($r['actual'],2)?></td>
+          <td><?= htmlspecialchars($r['name']) ?></td>
+          <td><?= htmlspecialchars($r['type']) ?></td>
+          <td><?= number_format($r['actual'], 2) ?></td>
         </tr>
         <?php endforeach; ?>
       </tbody>
     </table>
+
     <a href="?export=1" class="btn btn-success">Export to Excel</a>
   <?php endif; ?>
+
   <a href="index.html" class="btn btn-secondary mt-3">Upload Another PDF</a>
 </body>
 </html>
