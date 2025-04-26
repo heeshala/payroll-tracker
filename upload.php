@@ -115,7 +115,6 @@ if ($minutes === 60) {
 // 3) format as H:MM
 $hms = sprintf('%d.%02d', $hours, $minutes);
 
-echo "“{$name}” contains {$hms} names\n";
 
 
         $results[] = [
