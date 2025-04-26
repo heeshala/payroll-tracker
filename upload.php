@@ -391,4 +391,13 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
   <?php endif; ?>
   <a href="index.html" class="btn btn-secondary mt-3">Upload Another PDF</a>
 </body>
+<footer class="mt-5 text-center">
+  <small>
+    Concept and development by
+    <a href="https://www.linkedin.com/in/heeshala/" target="_blank" rel="noopener">
+      Heeshala
+    </a>
+  </small>
+</footer>
+
 </html>
