@@ -366,6 +366,7 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
         id="storeId"
         name="storeId"
         class="form-control"
+        required
         value="<?= htmlspecialchars($_GET['storeId'] ?? '') ?>"
       >
     </div>
@@ -377,6 +378,7 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
         name="date"
         class="form-control"
         placeholder="dd/mm/YYYY"
+        required
         value="<?= htmlspecialchars($_GET['date'] ?? '') ?>"
       >
     </div>
