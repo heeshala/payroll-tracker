@@ -56,6 +56,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !empty($_FILES['pdf']['tmp_name']))
         }
         $name = ucwords(strtolower(implode(' ', $parts)));
 
+
         // 3b) Determine type via expanding look-back
         $offset = mb_strpos($text, $m[0]);
         $type   = 'Unknown';
@@ -73,6 +74,34 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !empty($_FILES['pdf']['tmp_name']))
         if (strtolower($type) === 'casual crew') {
             continue;
         }
+
+        //Customize name
+        // collapse any stray NBSPs → spaces (just in case)
+$name = str_replace("\xC2\xA0", ' ', $name);
+
+// split on any run of whitespace
+$parts = preg_split('/\s+/u', trim($name));
+
+// the number of “names” (words) is:
+$wordCount = count($parts);
+
+
+  if ($wordCount > 3) {
+    $first    = $parts[0];
+    $lastTwo  = array_slice($parts, -2);       // returns an array of the last 2
+    $lastTwoStr = implode(' ', $lastTwo);
+    $name    = $first . ' ' . implode(' ', $lastTwo);
+
+
+
+}
+  
+
+//uppercase name and type
+$name = ucwords(strtolower($name));
+
+
+
 
         $results[] = [
             'name'   => $name,
