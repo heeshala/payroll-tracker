@@ -133,9 +133,21 @@ $name = ucwords(strtolower($name));
 
 
     // 5) SORT EACH BUCKET ALPHABETICALLY BY NAME
-    $sortByName = function(&$bucket) {
-        usort($bucket, fn($a, $b) => strcasecmp($a['name'], $b['name']));
-    };
+    $sortByName = function(array &$bucket) {
+    usort($bucket, function($a, $b) {
+        $aParts = explode(' ', $a['name']);
+        $bParts = explode(' ', $b['name']);
+        // use the second element if it exists, otherwise the first
+        $aKey = isset($aParts[1]) ? $aParts[1] : $aParts[0];
+        $bKey = isset($bParts[1]) ? $bParts[1] : $bParts[0];
+        $cmp  = strcasecmp($aKey, $bKey);
+        return $cmp !== 0
+            ? $cmp
+            : strcasecmp($a['name'], $b['name']);  // tie-breaker
+    });
+};
+
+
     $sortByName($fullTimeCrew);
     $sortByName($partTimeCrew);
     $sortByName($supervisors);
