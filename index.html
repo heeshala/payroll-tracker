@@ -7,6 +7,16 @@
 </head>
 <body class="p-5">
   <h2>Upload Labour Report PDF</h2>
+  <div class="alert alert-info">
+    <h4 class="alert-heading">📝 How to Export the PDF</h4>
+    <ol class="mb-0">
+      <li>Log in to the MyRestaurant portal.</li>
+      <li>Go to <strong>Labour</strong> → <strong>Labour Report</strong>.</li>
+      <li>Enable the checkbox for <em>"All days for week sorted by employee"</em>.</li>
+      <li>Click <strong>Show Report</strong>.</li>
+      <li>Select <strong>Export &gt; PDF</strong> (or <strong>Download PDF</strong>).</li>
+    </ol>
+  </div>
   <form action="upload.php" method="POST" enctype="multipart/form-data">
     <input type="file" name="pdf" class="form-control mb-3" accept="application/pdf" required>
     <button type="submit" class="btn btn-primary">Upload & Extract</button>
