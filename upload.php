@@ -154,6 +154,21 @@ $name = ucwords(strtolower($name));
     $sortByName($managers);
     $sortByName($others);
 
+    //Then partition them into non-casual vs casual
+$nonCasualSup = [];
+$casualSup    = [];
+
+foreach ($supervisors as $r) {
+    if (stripos($r['type'], 'Casual Supervisor') !== false) {
+        $casualSup[] = $r;
+    } else {
+        $nonCasualSup[] = $r;
+    }
+}
+
+// Re-assemble with all casuals at the bottom
+$supervisors = array_merge($nonCasualSup, $casualSup);
+
     // 6) FLATTEN IN THE DESIRED ORDER
     $ordered = array_merge(
         $fullTimeCrew,
