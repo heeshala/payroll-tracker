@@ -100,13 +100,28 @@ $wordCount = count($parts);
 //uppercase name and type
 $name = ucwords(strtolower($name));
 
+$decimal = (float)$m['actual'];
 
+// 1) split into whole hours and remainder
+$hours   = floor($decimal);
+$minutes = round(($decimal - $hours) * 60);
+
+// 2) handle a possible 60→ carry
+if ($minutes === 60) {
+    $hours   += 1;
+    $minutes = 0;
+}
+
+// 3) format as H:MM
+$hms = sprintf('%d.%02d', $hours, $minutes);
+
+echo "“{$name}” contains {$hms} names\n";
 
 
         $results[] = [
             'name'   => $name,
             'type'   => $type,
-            'actual' => (float)$m['actual'],
+            'actual' => $hms,
         ];
 
 
@@ -240,7 +255,7 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
         <tr>
           <td><?= htmlspecialchars($r['name']) ?></td>
           <td><?= htmlspecialchars($r['type']) ?></td>
-          <td><?= number_format($r['actual'], 2) ?></td>
+          <td><?= htmlspecialchars($r['actual']) ?></td>
         </tr>
         <?php endforeach; ?>
       </tbody>
