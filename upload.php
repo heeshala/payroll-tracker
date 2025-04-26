@@ -69,6 +69,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !empty($_FILES['pdf']['tmp_name']))
             if (preg_match_all($statusPosPattern, $ctx, $all, PREG_SET_ORDER)) {
                 $last  = end($all);
                 $type  = ucwords(strtolower($last[1] . ' ' . $last[2]));
+
+                if (preg_match('/\bshift\W*manager\b/iu', $type)) {
+   
+    $type = preg_replace(
+    '/\bShift\s+Manager\b/iu',
+    'Supervisor',
+    $type
+);
+    
+}
+
                 break;
             }
         }
@@ -132,7 +143,8 @@ $hms = sprintf('%d.%02d', $hours, $minutes);
             $fullTimeCrew[] = $r;
         } elseif (strpos($t, 'part time crew') !== false || strpos($t, 'part time maintenance') !== false) {
             $partTimeCrew[] = $r;
-        } elseif (strpos($t, 'supervisor') !== false) {
+        } elseif (strpos($t, 'supervisor') !== false || strpos($t, 'shift manager') !== false) {
+          
             $supervisors[] = $r;
         } elseif (strpos($t, 'manager') !== false) {
             $managers[] = $r;
@@ -263,7 +275,8 @@ $font->setSize(16);
             $fullTimeCrew[] = $r;
         } elseif (strpos($t, 'part time crew') !== false || strpos($t, 'part time maintenance') !== false) {
             $partTimeCrew[] = $r;
-        } elseif (strpos($t, 'supervisor') !== false) {
+        } elseif (strpos($t, 'supervisor') !== false || strpos($t, 'shift manager') !== false) {
+         
             $supervisors[] = $r;
         } elseif (strpos($t, 'manager') !== false) {
             $managers[] = $r;
